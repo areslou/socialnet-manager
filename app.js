@@ -35,11 +35,6 @@ const TIPS = [
 // Section 3: Helper Functions
 // ================================================================
 
-/**
- * setStatus(message, type)
- * Displays a message in the footer status bar.
- * type: 'info' (default), 'error', 'success'
- */
 function setStatus(message, type = 'info') {
   const bar     = document.getElementById('status-bar')
   const msg     = document.getElementById('status-message')
@@ -48,11 +43,9 @@ function setStatus(message, type = 'info') {
 
   msg.textContent = message
 
-  // Set timestamp
   const now = new Date()
   timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
-  // Reset classes
   bar.classList.remove('status-error', 'status-success')
 
   if (type === 'error') {
@@ -65,7 +58,6 @@ function setStatus(message, type = 'info') {
     icon.innerHTML = '<i class="bi bi-info-circle-fill"></i>'
   }
 
-  // Auto-clear error highlight after 4 seconds
   if (type === 'error') {
     setTimeout(() => {
       bar.classList.remove('status-error')
@@ -74,19 +66,11 @@ function setStatus(message, type = 'info') {
   }
 }
 
-/**
- * setTip(message)
- * Updates the quick tip in the right panel.
- */
 function setTip(message) {
   const el = document.getElementById('tip-text')
   if (el) el.textContent = message
 }
 
-/**
- * clearCentrePanel()
- * Resets the centre panel to its empty state.
- */
 function clearCentrePanel() {
   document.getElementById('profile-pic').src         = 'resources/images/default.png'
   document.getElementById('profile-name').textContent = 'No Profile Selected'
@@ -98,12 +82,7 @@ function clearCentrePanel() {
   currentProfileName = null
 }
 
-/**
- * displayProfile(profile, friends)
- * Renders a profile and its friends array into the centre panel.
- */
 function displayProfile(profile, friends = []) {
-  // Profile picture
   const picEl = document.getElementById('profile-pic')
   picEl.src   = profile.picture || 'resources/images/default.png'
   picEl.onerror = () => {
@@ -112,14 +91,11 @@ function displayProfile(profile, friends = []) {
 
   document.getElementById('profile-name').textContent = profile.name
 
-  // Status badge
   const statusEl = document.getElementById('profile-status')
   statusEl.innerHTML = `<i class="bi bi-circle-fill status-dot"></i> ${profile.status || '(no status)'}`
 
-  // Quote
   document.getElementById('profile-quote').textContent = profile.quote || '(no quote set)'
 
-  // Counters
   currentProfileId   = profile.id
   currentProfileName = profile.name
 
@@ -128,10 +104,6 @@ function displayProfile(profile, friends = []) {
   setTip(`Editing profile for ${profile.name}. Use the fields above to update their info.`)
 }
 
-/**
- * renderFriendsList(friends)
- * Populates the friends list in the centre panel.
- */
 function renderFriendsList(friends) {
   const list    = document.getElementById('friends-list')
   const countEl = document.getElementById('friends-count')
@@ -157,10 +129,6 @@ function renderFriendsList(friends) {
 // Section 4: CRUD Functions
 // ================================================================
 
-/**
- * loadProfileList()
- * Fetches all profiles from Supabase and renders the left panel list.
- */
 async function loadProfileList() {
   const container = document.getElementById('profile-list')
   container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading…</p></div>'
@@ -215,18 +183,12 @@ async function loadProfileList() {
   }
 }
 
-/**
- * selectProfile(profileId)
- * Loads a profile's full data and friend list, then renders the centre panel.
- */
 async function selectProfile(profileId) {
-  // Highlight active item
   document.querySelectorAll('#profile-list .profile-item').forEach(el => {
     el.classList.toggle('active', el.dataset.id === profileId)
   })
 
   try {
-    // Fetch full profile row
     const { data: profile, error: profileError } = await db
       .from('profiles')
       .select('*')
@@ -235,7 +197,6 @@ async function selectProfile(profileId) {
 
     if (profileError) throw profileError
 
-    // Fetch bidirectional friendships
     const { data: friendRows, error: friendsError } = await db
       .from('friends')
       .select('profile_id, friend_id')
@@ -243,7 +204,6 @@ async function selectProfile(profileId) {
 
     if (friendsError) throw friendsError
 
-    // Collect the "other side" UUIDs
     const friendIds = friendRows.map(row =>
       row.profile_id === profileId ? row.friend_id : row.profile_id
     )
@@ -268,11 +228,6 @@ async function selectProfile(profileId) {
   }
 }
 
-/**
- * addProfile()
- * Reads the name input, inserts a new profile into Supabase,
- * then reloads the list and selects the new profile.
- */
 async function addProfile() {
   const nameInput = document.getElementById('input-name')
   const name      = nameInput.value.trim()
@@ -309,10 +264,6 @@ async function addProfile() {
   }
 }
 
-/**
- * lookUpProfile()
- * Performs a case-insensitive partial search and selects the first match.
- */
 async function lookUpProfile() {
   const query = document.getElementById('input-lookup').value.trim()
 
@@ -344,11 +295,6 @@ async function lookUpProfile() {
   }
 }
 
-/**
- * deleteProfile()
- * Deletes the currently selected profile from Supabase.
- * ON DELETE CASCADE automatically removes all friend rows.
- */
 async function deleteProfile() {
   if (!currentProfileId) {
     setStatus('Error: No profile is selected. Click a profile in the list first.', 'error')
@@ -379,10 +325,6 @@ async function deleteProfile() {
   }
 }
 
-/**
- * changeStatus()
- * Updates the status column for the current profile.
- */
 async function changeStatus() {
   if (!currentProfileId) {
     setStatus('Error: No profile is selected.', 'error')
@@ -414,10 +356,6 @@ async function changeStatus() {
   }
 }
 
-/**
- * changePicture()
- * Updates the profile picture path and reflects it in the centre panel.
- */
 async function changePicture() {
   if (!currentProfileId) {
     setStatus('Error: No profile is selected.', 'error')
@@ -443,7 +381,6 @@ async function changePicture() {
     document.getElementById('input-picture').value = ''
     setStatus(`Profile picture updated for ${currentProfileName}.`, 'success')
 
-    // Also update the avatar in the left panel list
     const listItem = document.querySelector(`#profile-list .profile-item[data-id="${currentProfileId}"] .list-avatar`)
     if (listItem) listItem.src = newPicture
 
@@ -452,10 +389,6 @@ async function changePicture() {
   }
 }
 
-/**
- * changeQuote()
- * Updates the favorite quote column for the current profile.
- */
 async function changeQuote() {
   if (!currentProfileId) {
     setStatus('Error: No profile is selected.', 'error')
@@ -490,10 +423,6 @@ async function changeQuote() {
 // Section 5: Friends Management
 // ================================================================
 
-/**
- * addFriend()
- * Looks up a friend by name and inserts a bidirectional friendship row.
- */
 async function addFriend() {
   if (!currentProfileId) {
     setStatus('Error: No profile is selected.', 'error')
@@ -508,7 +437,6 @@ async function addFriend() {
   }
 
   try {
-    // Step 1: Resolve friend name to UUID
     const { data: found, error: findError } = await db
       .from('profiles')
       .select('id, name')
@@ -524,13 +452,11 @@ async function addFriend() {
 
     const friendId = found[0].id
 
-    // Step 2: Prevent self-friendship
     if (friendId === currentProfileId) {
       setStatus('Error: A profile cannot be friends with itself.', 'error')
       return
     }
 
-    // Step 3: Insert friendship (canonical: smaller UUID in profile_id)
     const profileIdA = currentProfileId < friendId ? currentProfileId : friendId
     const profileIdB = currentProfileId < friendId ? friendId : currentProfileId
 
@@ -556,10 +482,6 @@ async function addFriend() {
   }
 }
 
-/**
- * removeFriend()
- * Looks up a friend by name and deletes the friendship row.
- */
 async function removeFriend() {
   if (!currentProfileId) {
     setStatus('Error: No profile is selected.', 'error')
@@ -574,7 +496,6 @@ async function removeFriend() {
   }
 
   try {
-    // Resolve name to UUID
     const { data: found, error: findError } = await db
       .from('profiles')
       .select('id, name')
@@ -590,7 +511,6 @@ async function removeFriend() {
 
     const friendId = found[0].id
 
-    // Canonical ordering
     const profileIdA = currentProfileId < friendId ? currentProfileId : friendId
     const profileIdB = currentProfileId < friendId ? friendId : currentProfileId
 
@@ -641,6 +561,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btn-remove-friend')
     .addEventListener('click', removeFriend)
+
+  // UPDATED: ── Exit Button ──
+  document.getElementById('btn-exit')
+    .addEventListener('click', () => {
+      if (!window.close()) setStatus('To exit, close this browser tab.', 'error')
+    })
 
   // ── Enter key shortcuts ──
   document.getElementById('input-name')
