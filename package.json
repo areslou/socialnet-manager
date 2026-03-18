@@ -1,0 +1,26 @@
+{
+  "name": "socialnet-manager",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areslou/SocialMediaAppManager.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/areslou/SocialMediaAppManager/issues"
+  },
+  "homepage": "https://github.com/areslou/SocialMediaAppManager#readme",
+  "dependencies": {
+    "@vercel/blob": "^2.3.1",
+    "busboy": "^1.6.0",
+    "sharp": "^0.34.5"
+  }
+}

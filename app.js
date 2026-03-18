@@ -368,16 +368,15 @@ async function changePicture() {
   const file = fileInput.files[0]
   const urlValue = urlInput.value.trim()
 
-  // Ensure they provided at least one of the two options
   if (!file && !urlValue) {
     setStatus('Error: Please select a file or paste an image URL.', 'error')
     return
   }
 
-  let finalPictureUrl = urlValue // Default to the typed URL
+  let finalPictureUrl = urlValue // Default to the pasted URL
 
   try {
-    // 1. If the user selected a file, run the Vercel Blob upload pipeline
+    // 1. If a file was selected, send it to our Vercel Serverless Function
     if (file) {
       setStatus('Uploading image to Vercel Blob... Please wait.', 'info')
       
@@ -389,24 +388,21 @@ async function changePicture() {
         body: formData
       })
 
-      // Safely parse the response
       const rawText = await response.text();
       let result;
       try {
         result = JSON.parse(rawText);
       } catch {
-        throw new Error(`Server returned unexpected data: ${rawText.slice(0, 50)}...`)
+        throw new Error(`Server returned unexpected data.`)
       }
 
-      if (!response.ok) {
-        throw new Error(result.error || `HTTP ${response.status} Error`);
-      }
+      if (!response.ok) throw new Error(result.error || `HTTP ${response.status} Error`);
 
-      // Overwrite our final URL with the new secure Vercel Blob URL
+      // Overwrite the final URL with the newly generated cloud URL
       finalPictureUrl = result.url; 
     }
 
-    // 2. Save the final URL to Supabase (works for both Blob URLs and pasted URLs)
+    // 2. Save the URL (either the Blob one or the pasted one) to Supabase
     setStatus('Saving new picture to database...', 'info')
     
     const { error } = await db
@@ -418,12 +414,11 @@ async function changePicture() {
 
     // 3. Update the UI
     document.getElementById('profile-pic').src = finalPictureUrl
-    fileInput.value = '' // Clear file input
-    urlInput.value = ''  // Clear text input
+    fileInput.value = ''
+    urlInput.value = ''
     
     setStatus(`Profile picture updated for ${currentProfileName}.`, 'success')
 
-    // Update the thumbnail in the left-hand profile list
     const listItem = document.querySelector(`#profile-list .profile-item[data-id="${currentProfileId}"] .list-avatar`)
     if (listItem) listItem.src = finalPictureUrl
 
