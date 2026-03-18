@@ -362,40 +362,20 @@ async function changePicture() {
     return
   }
 
-  const fileInput = document.getElementById('input-picture-file')
-  const urlInput  = document.getElementById('input-picture')
-  const file      = fileInput.files[0]
-  const urlValue  = urlInput.value.trim()
+  const filePathInput = document.getElementById('input-picture-file')
+  const urlInput      = document.getElementById('input-picture')
+  const filePath      = filePathInput.value.trim()
+  const urlValue      = urlInput.value.trim()
 
-  // Must have either a file or a URL
-  if (!file && !urlValue) {
-    setStatus('Error: Please upload a file or paste an image URL.', 'error')
+  // URL takes priority; fall back to file path
+  const newPicture = urlValue || filePath
+
+  if (!newPicture) {
+    setStatus('Error: Please enter a file path or paste an image URL.', 'error')
     return
   }
 
   try {
-    let newPicture = urlValue
-
-    // If a file was chosen, upload it to Supabase Storage
-    if (file) {
-      const fileExt  = file.name.split('.').pop()
-      const fileName = `${currentProfileId}-${Date.now()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
-
-      const { error: uploadError } = await db.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true })
-
-      if (uploadError) throw uploadError
-
-      const { data: urlData } = db.storage
-        .from('avatars')
-        .getPublicUrl(filePath)
-
-      newPicture = urlData.publicUrl
-    }
-
-    // Save the URL to the profiles table
     const { error } = await db
       .from('profiles')
       .update({ picture: newPicture })
@@ -403,10 +383,9 @@ async function changePicture() {
 
     if (error) throw error
 
-    // Update UI
     document.getElementById('profile-pic').src = newPicture
-    fileInput.value = ''
-    urlInput.value  = ''
+    filePathInput.value = ''
+    urlInput.value      = ''
     setStatus(`Profile picture updated for ${currentProfileName}.`, 'success')
 
     const listItem = document.querySelector(`#profile-list .profile-item[data-id="${currentProfileId}"] .list-avatar`)
