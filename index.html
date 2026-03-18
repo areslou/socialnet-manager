@@ -177,18 +177,23 @@
               </div>
             </div>
 
-            <div class="field-group">
-              <label for="input-picture" class="field-label">
-                <i class="bi bi-image-fill"></i> Profile Picture Path
-              </label>
-              <div class="input-row">
-                <input type="text" id="input-picture" class="sn-input"
-                  placeholder="resources/images/photo.png" autocomplete="off">
-                <button id="btn-picture" class="sn-btn sn-btn-secondary" title="Update Picture">
-                  <i class="bi bi-upload"></i>
-                </button>
-              </div>
+           <div class="field-group">
+            <label class="field-label">
+              <i class="bi bi-image-fill"></i> Change Picture
+            </label>
+            <label class="field-label-sub">Upload from device:</label>
+            <div class="input-row mb-2">
+              <input type="file" id="input-picture-file" class="sn-input" accept="image/*">
             </div>
+            <label class="field-label-sub">Or paste an image URL:</label>
+            <div class="input-row">
+              <input type="text" id="input-picture" class="sn-input"
+                placeholder="https://example.com/image.webp" autocomplete="off">
+            </div>
+            <button id="btn-picture" class="sn-btn sn-btn-secondary w-100 mt-2" title="Update Picture">
+              <i class="bi bi-upload me-1"></i> Update Picture
+            </button>
+          </div>
 
             <div class="field-group">
               <label for="input-quote" class="field-label">

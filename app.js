@@ -362,14 +362,40 @@ async function changePicture() {
     return
   }
 
-  const newPicture = document.getElementById('input-picture').value.trim()
+  const fileInput = document.getElementById('input-picture-file')
+  const urlInput  = document.getElementById('input-picture')
+  const file      = fileInput.files[0]
+  const urlValue  = urlInput.value.trim()
 
-  if (!newPicture) {
-    setStatus('Error: Picture path field is empty.', 'error')
+  // Must have either a file or a URL
+  if (!file && !urlValue) {
+    setStatus('Error: Please upload a file or paste an image URL.', 'error')
     return
   }
 
   try {
+    let newPicture = urlValue
+
+    // If a file was chosen, upload it to Supabase Storage
+    if (file) {
+      const fileExt  = file.name.split('.').pop()
+      const fileName = `${currentProfileId}-${Date.now()}.${fileExt}`
+      const filePath = `avatars/${fileName}`
+
+      const { error: uploadError } = await db.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = db.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      newPicture = urlData.publicUrl
+    }
+
+    // Save the URL to the profiles table
     const { error } = await db
       .from('profiles')
       .update({ picture: newPicture })
@@ -377,8 +403,10 @@ async function changePicture() {
 
     if (error) throw error
 
+    // Update UI
     document.getElementById('profile-pic').src = newPicture
-    document.getElementById('input-picture').value = ''
+    fileInput.value = ''
+    urlInput.value  = ''
     setStatus(`Profile picture updated for ${currentProfileName}.`, 'success')
 
     const listItem = document.querySelector(`#profile-list .profile-item[data-id="${currentProfileId}"] .list-avatar`)
@@ -388,7 +416,6 @@ async function changePicture() {
     setStatus(`Error updating picture: ${err.message}`, 'error')
   }
 }
-
 async function changeQuote() {
   if (!currentProfileId) {
     setStatus('Error: No profile is selected.', 'error')
@@ -587,7 +614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('input-friend-remove')
     .addEventListener('keydown', e => { if (e.key === 'Enter') removeFriend() })
 
-  // ── Rotate tips every 8 seconds ──
+ 
   let tipIndex = 0
   setInterval(() => {
     if (!currentProfileId) {
