@@ -362,34 +362,70 @@ async function changePicture() {
     return
   }
 
-  const filePathInput = document.getElementById('input-picture-file')
-  const urlInput      = document.getElementById('input-picture')
-  const filePath      = filePathInput.value.trim()
-  const urlValue      = urlInput.value.trim()
+  const fileInput = document.getElementById('input-picture-file')
+  const urlInput = document.getElementById('input-picture')
+  
+  const file = fileInput.files[0]
+  const urlValue = urlInput.value.trim()
 
-  // URL takes priority; fall back to file path
-  const newPicture = urlValue || filePath
-
-  if (!newPicture) {
-    setStatus('Error: Please enter a file path or paste an image URL.', 'error')
+  // Ensure they provided at least one of the two options
+  if (!file && !urlValue) {
+    setStatus('Error: Please select a file or paste an image URL.', 'error')
     return
   }
 
+  let finalPictureUrl = urlValue // Default to the typed URL
+
   try {
+    // 1. If the user selected a file, run the Vercel Blob upload pipeline
+    if (file) {
+      setStatus('Uploading image to Vercel Blob... Please wait.', 'info')
+      
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload-avatar', {
+        method: 'POST',
+        body: formData
+      })
+
+      // Safely parse the response
+      const rawText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(rawText);
+      } catch {
+        throw new Error(`Server returned unexpected data: ${rawText.slice(0, 50)}...`)
+      }
+
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP ${response.status} Error`);
+      }
+
+      // Overwrite our final URL with the new secure Vercel Blob URL
+      finalPictureUrl = result.url; 
+    }
+
+    // 2. Save the final URL to Supabase (works for both Blob URLs and pasted URLs)
+    setStatus('Saving new picture to database...', 'info')
+    
     const { error } = await db
       .from('profiles')
-      .update({ picture: newPicture })
+      .update({ picture: finalPictureUrl })
       .eq('id', currentProfileId)
 
     if (error) throw error
 
-    document.getElementById('profile-pic').src = newPicture
-    filePathInput.value = ''
-    urlInput.value      = ''
+    // 3. Update the UI
+    document.getElementById('profile-pic').src = finalPictureUrl
+    fileInput.value = '' // Clear file input
+    urlInput.value = ''  // Clear text input
+    
     setStatus(`Profile picture updated for ${currentProfileName}.`, 'success')
 
+    // Update the thumbnail in the left-hand profile list
     const listItem = document.querySelector(`#profile-list .profile-item[data-id="${currentProfileId}"] .list-avatar`)
-    if (listItem) listItem.src = newPicture
+    if (listItem) listItem.src = finalPictureUrl
 
   } catch (err) {
     setStatus(`Error updating picture: ${err.message}`, 'error')
